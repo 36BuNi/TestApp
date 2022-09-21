@@ -1,10 +1,5 @@
 from marshmallow import Schema, fields
 
-parameter_marshaller = {
-    "flag": fields.String,
-    "value": fields.String
-}
-
 
 class EmployeeSchema(Schema):
     """

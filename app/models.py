@@ -1,8 +1,10 @@
 from app import db
 
 
-# Создаем массив пользователей.
-class Employee_table(db.Model):
+class EmployeeTable(db.Model):
+    """
+    Модель пользователя.
+    """
     __tablename__ = 'employee_table'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -10,11 +12,13 @@ class Employee_table(db.Model):
     position_held = db.Column(db.String(), nullable=False)
 
     def __repr__(self):
-        return f"Employee_table {self.id} - {self.full_name}"
+        return f"EmployeeTable {self.id} - {self.full_name}"
 
 
-# Создаем массив задач пользователей .
-class Task_table(db.Model):
+class TaskTable(db.Model):
+    """
+    Модель задачи.
+    """
     __tablename__ = 'task_table'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -28,4 +32,4 @@ class Task_table(db.Model):
     status = db.Column(db.Boolean(), default=False, nullable=False)
 
     def __repr__(self):
-        return f"Task_table {self.task_name}"
+        return f"TaskTable {self.task_name}"

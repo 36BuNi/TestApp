@@ -1,12 +1,10 @@
 from flask import request, jsonify
 from flask_apispec import FlaskApiSpec, doc, marshal_with
 
-from app import app
-from app import db
-from app import schemas
-from app.models import Employee_table, Task_table
+from app import app, db, schemas
+from app.models import EmployeeTable, TaskTable
 
-# Начало cоздания документации.
+# Начало создания документации.
 docs = FlaskApiSpec(app)
 
 
@@ -19,7 +17,7 @@ def get_manage_employee():
     Получение массива всех сотрудников.
     :return:
     """
-    employees = Employee_table.query.all()
+    employees = EmployeeTable.query.all()
     results = [
         {
             "full_name": employee.full_name,
@@ -37,7 +35,7 @@ def post_manage_employee():
     :return:
     """
     data = request.get_json()
-    new_employee = Employee_table(full_name=data['full_name'], position=data['position'])
+    new_employee = EmployeeTable(full_name=data['full_name'], position=data['position'])
     db.session.add(new_employee)
     db.session.commit()
     return {
@@ -54,7 +52,7 @@ def get_employee(id):
     :param id: id сотрудника.
     :return:
     """
-    employee = Employee_table.query.filter_by(id=id).first()
+    employee = EmployeeTable.query.filter_by(id=id).first()
     results = {"full_name": employee.full_name,
                "position": employee.position_held}
     return jsonify(results)
@@ -70,7 +68,7 @@ def put_employee(id):
     :return:
     """
     data = request.get_json()
-    employee = Employee_table.query.filter_by(id=id).first()
+    employee = EmployeeTable.query.filter_by(id=id).first()
     employee.full_name = data['name']
     employee.position_held = data['model']
     db.session.add(employee)
@@ -88,7 +86,7 @@ def delete_employee(id):
     :param id:
     :return:
     """
-    employee = Employee_table.query.filter_by(id=id).first()
+    employee = EmployeeTable.query.filter_by(id=id).first()
     db.session.delete(employee)
     db.session.commit()
     return {"message": f"Employee {employee.full_name} "
@@ -102,7 +100,7 @@ app.add_url_rule('/', delete_employee)
 
 
 @app.route('/tasks', methods=['POST'])
-@marshal_with(schemas.TaskSchema(many=True), 200, description='Cоздание новой задачи')
+@marshal_with(schemas.TaskSchema(many=True), 200, description='Создание новой задачи')
 @doc(description='Создание новой задачи', tags=['Task'])
 def post_tasks():
     """
@@ -110,11 +108,11 @@ def post_tasks():
     :return:
     """
     data = request.get_json()
-    new_task = Task_table(title=data['title'],
-                          parent_task_id=data['parent_task_id'],
-                          employee_id=data['employee_id'],
-                          deadline=data['deadline'],
-                          status=data['status'])
+    new_task = TaskTable(title=data['title'],
+                         parent_task_id=data['parent_task_id'],
+                         employee_id=data['employee_id'],
+                         deadline=data['deadline'],
+                         status=data['status'])
     db.session.add(new_task)
     db.session.commit()
     return {"message": f"Task {new_task.title} "
@@ -129,7 +127,7 @@ def get_tasks():
     Получение списка всех задач.
     :return:
     """
-    tasks = Task_table.query.all()
+    tasks = TaskTable.query.all()
     results = [
         {
             "id": task.id,
@@ -142,8 +140,6 @@ def get_tasks():
     return jsonify({"count": len(results), "tasks": results})
 
 
-# _______________________________________________________ #
-
 @app.route('/task/<int:id>/', methods=['GET'])
 @marshal_with(schemas.TaskSchema(many=True), 200, description='Получить данные задачи')
 @doc(description='Данные задачи', tags=['Task'])
@@ -153,7 +149,7 @@ def get_task(id):
     :param id:
     :return:
     """
-    task = Task_table.query.filter_by(id=id).first()
+    task = TaskTable.query.filter_by(id=id).first()
     results = {"id": task.id,
                "title": task.title,
                "parent_task_id": task.parent_task_id,
@@ -172,7 +168,7 @@ def put_task(id):
     :param id:
     :return:
     """
-    task = Task_table.query.filter_by(id=id).first()
+    task = TaskTable.query.filter_by(id=id).first()
     data = request.get_json()
     task.title = data['title']
     task.parent_task_id = data['parent_task_id']
@@ -194,14 +190,13 @@ def delete_task(id):
     :param id:
     :return:
     """
-    task = Task_table.query.filter_by(id=id).first()
+    task = TaskTable.query.filter_by(id=id).first()
     db.session.delete(task)
     db.session.commit()
     return {"message": f"Employee {task.title} "
                        f"Успешно удалено."}
 
 
-# Получение массива сотрудников и задач.
 @app.route('/busy-employees', methods=['GET'])
 @marshal_with(schemas.EmployeesTaskSchema(many=True), 200, description='Получение массива сотрудников и задач')
 @doc(description='Список занятых сотрудников и задач', tags=['Busy'])
@@ -210,9 +205,9 @@ def get_busy_employees():
     Получение массива сотрудников и задач.
     :return:
     """
-    employees = Employee_table.query.outerjoin(Task_table). \
-        group_by(Employee_table.id).filter(Employee_table.tasks). \
-        order_by(db.func.count().filter(Task_table.status).desc())
+    employees = EmployeeTable.query.outerjoin(TaskTable). \
+        group_by(EmployeeTable.id).filter(EmployeeTable.tasks). \
+        order_by(db.func.count().filter(TaskTable.status).desc())
     results = [
         {
             "id": employee.id,
@@ -232,15 +227,19 @@ def get_busy_employees():
     return jsonify({"count": len(results), "employees": results})
 
 
-# Получение массива списка важных задач и сотрудников,которые могут взять эти задачи.
 @app.route('/important-task', methods=['GET'])
 @marshal_with(schemas.EmployeesTaskSchema(many=True), 200,
               description='Получить список важных задач и сотрудников которые могу взять эти задачи')
-@doc(description='Список важных задач и сотрудников которые могу взять эти задачи', tags=['Immortal_task'])
+@doc(description='Список важных задач и сотрудников которые могу взять эти задачи', tags=['Important_task'])
 def get_important_task():
-    tasks = Task_table.query.filter(Task_table.employee_id == None,
-                                    Task_table.parent_task != None).all()
-    employees = Employee_table.query.all()
+    """
+    Получить список важных задач и сотрудников которые могу взять эти задачи.
+    :return:
+    """
+
+    tasks = TaskTable.query.filter(TaskTable.employee_id == None,
+                                   TaskTable.parent_task != None).all()
+    employees = EmployeeTable.query.all()
     minimal_tasks_count = min(
         [(len(employee.tasks)) for employee in employees])
     least_busy_employees = [
